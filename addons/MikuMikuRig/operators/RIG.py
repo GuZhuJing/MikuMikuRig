@@ -691,8 +691,6 @@ class mmrrigOperator(bpy.types.Operator):
                 return True
         return False
 
-
-        #
         # 确保脊柱骨骼连续性
     def ensure_spine_continuity(self, armature_name):
         # 进入编辑模式
@@ -1238,7 +1236,6 @@ class mmrrigOperator(bpy.types.Operator):
                         bpy.context.active_bone.name = "spine_007"
                         bpy.ops.armature.select_all(action='DESELECT')
 
-                        #
                         # 新增的额外处理
                         # 确保 spine.004 连接到 spine.003
                         if bone.name == 'spine.004':
@@ -1552,7 +1549,6 @@ class mmrrigOperator(bpy.types.Operator):
         # 将该物体设置为活动对象
         bpy.context.view_layer.objects.active = obj
 
-        #
         # 确保脊柱骨骼连续性
         self.ensure_spine_continuity(Rig_name)
 
