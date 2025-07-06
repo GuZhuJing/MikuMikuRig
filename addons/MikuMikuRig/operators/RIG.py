@@ -691,6 +691,33 @@ class mmrrigOperator(bpy.types.Operator):
                 return True
         return False
 
+
+        #
+        # 确保脊柱骨骼连续性
+    def ensure_spine_continuity(self, armature_name):
+        # 进入编辑模式
+        bpy.ops.object.mode_set(mode='OBJECT')
+        bpy.ops.object.select_all(action='DESELECT')
+        bpy.ops.object.select_pattern(pattern=armature_name)
+        bpy.context.view_layer.objects.active = bpy.data.objects[armature_name]
+        bpy.ops.object.mode_set(mode='EDIT')
+        
+        # 获取脊柱骨骼链
+        spine_bones = ['spine', 'spine.001', 'spine.002', 'spine.003', 'spine.004']
+        
+        # 确保每个骨骼的尾部连接到下一个骨骼的头部
+        for i in range(len(spine_bones) - 1):
+            current_bone = bpy.context.object.data.edit_bones.get(spine_bones[i])
+            next_bone = bpy.context.object.data.edit_bones.get(spine_bones[i+1])
+            
+            if current_bone and next_bone:
+                # 如果当前骨骼的尾部不等于下一个骨骼的头部，调整位置
+                if (current_bone.tail - next_bone.head).length > 0.001:
+                    print(f"修复骨骼连续性: {current_bone.name} -> {next_bone.name}")
+                    next_bone.head = current_bone.tail
+        # 返回物体模式
+        bpy.ops.object.mode_set(mode='OBJECT')
+
     def execute(self, context: bpy.types.Context):
 
         mmr = context.object.mmr
@@ -1072,8 +1099,8 @@ class mmrrigOperator(bpy.types.Operator):
             if mmr.Bend_the_bones:
                 # 导入初始姿势VMD文件
                 bpy.ops.mmd_tools.import_vmd(filepath=new_file_path,
-                                             files=[{"name": file_name, "name": file_name}],
-                                             directory=new_path)
+                                            files=[{"name": file_name, "name": file_name}],
+                                            directory=new_path)
 
             The_current_frame = bpy.context.scene.frame_current
             # 当前帧设置为第6帧
@@ -1210,6 +1237,16 @@ class mmrrigOperator(bpy.types.Operator):
                         bpy.context.active_bone.tail[2] = etfhu_z  # 修改尾部的z坐标
                         bpy.context.active_bone.name = "spine_007"
                         bpy.ops.armature.select_all(action='DESELECT')
+
+                        #
+                        # 新增的额外处理
+                        # 确保 spine.004 连接到 spine.003
+                        if bone.name == 'spine.004':
+                            spine003 = armature.edit_bones.get('spine.003')
+                            if spine003:
+                                print(f"确保 {bone.name} 连接到 spine.003")
+                                bpy.context.active_bone.head = spine003.tail
+
                         # 选择活动骨骼
                         bpy.ops.object.select_pattern(pattern="spine_007", extend=False)
                         armature = bpy.context.edit_object.data
@@ -1514,6 +1551,10 @@ class mmrrigOperator(bpy.types.Operator):
         obj = bpy.data.objects[Rig_name]
         # 将该物体设置为活动对象
         bpy.context.view_layer.objects.active = obj
+
+        #
+        # 确保脊柱骨骼连续性
+        self.ensure_spine_continuity(Rig_name)
 
         # Rigify
         bpy.ops.pose.rigify_generate('INVOKE_DEFAULT')
